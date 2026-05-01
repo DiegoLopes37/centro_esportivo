@@ -47,4 +47,54 @@ def test_limit_reservations(service):
     assert service.reserve_court(10, 2) is True
     assert service.reserve_court(10, 3) is False
 
+# 7. fila de espera
+def test_waitlist_success(service):
+    service.reserve_court(10, 1)
+
+    assert service.join_waitlist(40, 1) is True
+
+# 8. fila duplicada
+def test_waitlist_duplicate(service):
+    service.reserve_court(10, 1)
+
+    assert service.join_waitlist(40, 1) is True
+    assert service.join_waitlist(40, 1) is False
+
+# 9. liberação sem fila
+def test_release_without_waitlist(service):
+    service.reserve_court(10, 1)
+    service.release_court(10, 1)
+
+    assert service.court_repository.is_available(1) is True
+
+# 10. liberação com fila mantém indisponível
+def test_release_with_waitlist(service):
+    service.reserve_court(10, 1)
+    service.join_waitlist(40, 1)
+
+    service.release_court(10, 1)
+
+    assert service.court_repository.is_available(1) is False
+
+# 11. reserva remove próprio da fila
+def test_reservation_removes_self_from_waitlist(service):
+    service.reserve_court(10, 1)
+    service.join_waitlist(10, 1)
+
+    service.release_court(10, 1)
+    service.reserve_court(10, 1)
+
+    assert service.waitlist_repository.has_waitlist(10, 1) is False
+
+# 12. fluxo completo (cenário integrado)
+def test_full_flow(service):
+    service.reserve_court(10, 1)
+    service.join_waitlist(40, 1)
+
+    service.release_court(10, 1)
+    
+    service.court_repository.mark_available(1) 
+
+    assert service.reserve_court(40, 1) is True
+
 
